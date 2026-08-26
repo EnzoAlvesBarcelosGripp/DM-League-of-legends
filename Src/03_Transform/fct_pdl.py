@@ -2,6 +2,7 @@ import os
 import json
 import gzip
 import logging
+import bisect
 from datetime import datetime
 import pandas as pd
 
@@ -28,6 +29,7 @@ class FctPdlHistTransformer:
     def __init__(self, transform_dir: str = OUTPUT_DIR):
         self.transform_dir = transform_dir
         self.main_player_map = self._load_main_player_map()
+        self.match_times = self._load_match_times()
 
     def _load_main_player_map(self) -> dict:
         """Carrega a Dim_player e cria o dicionário puuid -> sk_player APENAS para contas principais."""
@@ -41,6 +43,25 @@ class FctPdlHistTransformer:
             logging.error(f"Erro ao carregar dim_player em {self.transform_dir}: {e}")
             raise FctPdlHistError(f"Falha ao inicializar mapa de jogadores principais: {e}")
 
+    def _load_match_times(self) -> list[int]:
+        """Carrega os sk_time já existentes em dim_time (timestamps reais de partidas), ordenados."""
+        try:
+            time_path = os.path.join(self.transform_dir, "dim_time.csv")
+            df_time = pd.read_csv(time_path)
+            return sorted(df_time["sk_time"].astype(int).tolist())
+        except Exception as e:
+            logging.error(f"Erro ao carregar dim_time em {self.transform_dir}: {e}")
+            raise FctPdlHistError(f"Falha ao carregar timestamps de partidas: {e}")
+
+    def _closest_match_time(self, snapshot_time: int) -> int | None:
+        """Encontra o sk_time de partida mais recente que seja <= ao timestamp do snapshot de PDL.
+        Garante que o sk_time do registro de PDL sempre exista em dim_time (respeita a FK),
+        associando o snapshot à última partida conhecida até aquele momento — sem perder a
+        granularidade histórica entre snapshots diferentes."""
+        idx = bisect.bisect_right(self.match_times, snapshot_time)
+        if idx == 0:
+            return None  # não existe nenhuma partida registrada antes desse snapshot
+        return self.match_times[idx - 1]
 
     def _to_absolute_pdl(self, tier: str, rank: str, lp: int) -> int:
         """Converte Tier, Rank e LP em uma pontuação absoluta contínua."""
@@ -78,9 +99,14 @@ class FctPdlHistTransformer:
         return df_pdl
 
     def transform_pdl_file(self, json_data: dict | list, sk_time_file: int, puuid: str) -> list[dict]:
-        """Gera as linhas associando o snapshot ao timestamp do próprio arquivo."""
+        """Gera as linhas associando o snapshot à partida mais recente conhecida até aquele momento."""
         sk_player = self.main_player_map.get(puuid)
         if not sk_player:
+            return []
+
+        sk_time = self._closest_match_time(sk_time_file)
+        if sk_time is None:
+            logging.warning(f"Nenhuma partida encontrada antes do snapshot de PDL ({sk_time_file}) para {puuid}. Registro ignorado.")
             return []
 
         entries = json_data if isinstance(json_data, list) else [json_data]
@@ -89,7 +115,7 @@ class FctPdlHistTransformer:
         for entry in entries:
             row = {
                 "sk_player": sk_player,
-                "sk_time": sk_time_file,  # Usa o timestamp real de quando o dado foi puxado!
+                "sk_time": sk_time,  # Associado à última partida conhecida até o momento do snapshot
                 "tier": entry.get("tier"),
                 "rank": entry.get("rank"),
                 "leaguePoints": entry.get("leaguePoints", 0),
