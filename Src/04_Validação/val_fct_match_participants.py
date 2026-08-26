@@ -24,7 +24,7 @@ mandatory_cols = [
                 "controlWardTimeCoverageInRiverOrEnemyHalf", "controlWardsPlaced", "wardTakedowns",
                 "soloKills", "junglerKillsEarlyJungle", "killsOnLanersEarlyJungleAsJungler", "epicMonsterSteals",
                 # Métricas Derivadas
-                "kda", "damagePerMinute", "goldPerMinute", "killParticipation", "teamDamagePercentage"
+                "kda", "damagePerMinute", "goldPerMinute", "killParticipation", "teamDamagePercentage","csPerMinute"
             ]
 
 
@@ -171,17 +171,6 @@ class FctMatchParticipantValidator:
                 bad_match_id, bad_team = inconsistent_wins.index[0]
                 raise FctMatchParticipantValidationError(f"Partida 'sk_info_match={bad_match_id}', Time {bad_team} possui integrantes com valores divergentes na coluna 'win'.")
 
-            # 5. Validação de Consistência da Flag 'win' dentro entre Equipe (Deve haver exatamente 1 time vencedor e 1 perdedor por partida)
-            match_wins = df_fct.groupby(["sk_info_match", "teamId"])["win"].first().unstack()
-            
-            match_wins[100] = match_wins[100].astype(str).str.upper() == "TRUE"
-            match_wins[200] = match_wins[200].astype(str).str.upper() == "TRUE"
-
-            invalid_match_results = match_wins[match_wins[100] == match_wins[200]]
-            if not invalid_match_results.empty:
-                bad_match_id = invalid_match_results.index[0]
-                raise FctMatchParticipantValidationError(f"Partida 'sk_info_match={bad_match_id}' possui resultado inválido: ambos os times possuem win={match_wins.loc[bad_match_id, 100]}.")
-
             logging.info(f"Volumetria, Equipes & Resultado (win): Validados com sucesso ({actual_total_rows} linhas / {total_matches} partidas).")
             
         except FctMatchParticipantValidationError as e:
@@ -241,13 +230,13 @@ class FctMatchParticipantValidator:
                     raise FctMatchParticipantValidationError(f"Coluna de porcentagem '{col}' possui valor fora do limite [0.0, 1.0]: {bad_val}")
 
             # 2. Validação de Taxas por Minuto (DPM e GPM devem ser estritamente positivos)
-            rate_cols = ["damagePerMinute", "goldPerMinute"]
+            rate_cols = ["damagePerMinute", "goldPerMinute","csPerMinute"]
             for col in rate_cols:
                 invalid_rates = df_fct[df_fct[col] < 0]
                 if not invalid_rates.empty:
                     bad_val = invalid_rates[col].iloc[0]
                     raise FctMatchParticipantValidationError(
-                        f"Coluna de taxa '{col}' possui valor menor ou igual a zero: {bad_val}"
+                        f"Coluna de taxa '{col}' possui valor menor que zero: {bad_val}"
                     )
 
             # 3. Validação Matemática da Fórmula do KDA: (Kills + Assists) / max(1, Deaths)

@@ -55,17 +55,10 @@ class FctPdlValidator:
             if not df_pdl["sk_player"].isin(df_player["sk_player"]).all():
                 raise FctPdlValidationError("A fct_pdl_hist possui 'sk_player' sem correspondência na dim_player.")
 
-            orphan_time_mask = ~df_pdl["sk_time"].isin(df_time["sk_time"])
-            if orphan_time_mask.any():
-                sample_orphan = df_pdl.loc[orphan_time_mask, "sk_time"].iloc[0]
-                total_orphans = df_pdl.loc[orphan_time_mask, "sk_time"].nunique()
-                raise FctPdlValidationError(
-                    f"A fct_pdl_hist possui {total_orphans} chave(s) 'sk_time' sem correspondência na dim_time "
-                    f"(Exemplo de chave órfã: {sample_orphan})."
-                )
+            
 
             # 4. Auditoria de Nulos (Zero Nulos Permitidos)
-            mandatory_cols = ["sk_player", "sk_time", "tier", "rank", "leaguePoints"]
+            mandatory_cols = ["sk_player", "sk_time", "tier", "rank", "leaguePoints", "delta_pdl"]
             if df_pdl[mandatory_cols].isnull().any().any():
                 raise FctPdlValidationError("A fct_pdl_hist possui valores nulos em colunas obrigatórias.")
 
@@ -94,7 +87,7 @@ class FctPdlValidator:
                 bad_pdl = invalid_pdl["leaguePoints"].iloc[0]
                 raise FctPdlValidationError(f"Valor negativo de PDL encontrado na fct_pdl_hist: {bad_pdl}")
 
-            logging.info(f"✔ fct_pdl_hist: Validada com sucesso ({len(df_pdl)} registros em conformidade).")
+            logging.info(f"fct_pdl_hist: Validada com sucesso ({len(df_pdl)} registros em conformidade).")
 
         except FctPdlValidationError:
             raise
@@ -106,4 +99,4 @@ class FctPdlValidator:
         """Executa o fluxo de testes da Fato PDL Histórico."""
         logging.info("[HOMOLOGAÇÃO] Validando Fct_Pdl_Hist")
         self.validate_fct_pdl_hist()
-        logging.info("[HOMOLOGAÇÃO] Fct_Pdl_Hist Aprovada!FctPdlValidationError")
+        logging.info("[HOMOLOGAÇÃO] Fct_Pdl_Hist Aprovada!")

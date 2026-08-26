@@ -107,7 +107,7 @@ class DimValidator:
                 )
 
             # 3. Ausência de Nulos em chaves mandatórias
-            columns = ["puuid", "sk_player"]
+            columns = ["puuid", "sk_player","is_main_account"]
             if df[columns].isnull().any().any():
                 raise DimValidationError("dim_player: Colunas 'puuid' ou 'sk_player' possuem valores nulos.")
 
