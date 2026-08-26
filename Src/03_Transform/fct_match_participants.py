@@ -193,6 +193,10 @@ class FctMatchParticipantTransformer:
         assists = participant.get("assists", 0)
         player_damage = participant.get("totalDamageDealtToChampions", 0)
         player_gold = participant.get("goldEarned", 0)
+        minions_killed = participant.get("totalMinionsKilled", 0)
+        jungle_minions_killed = participant.get("neutralMinionsKilled", 0)
+        total_cs = minions_killed + jungle_minions_killed
+
         team_id = participant.get("teamId")
         participant_id = participant.get("participantId")
 
@@ -207,6 +211,7 @@ class FctMatchParticipantTransformer:
         gpm = self._calculate_gpm(player_gold, game_duration_seconds)
         kp = self._calculate_kill_participation(kills, assists, team_total_kills)
         team_dmg_pct = self._calculate_team_damage_percentage(player_damage, team_total_damage)
+        cspm = self._calculate_per_minute(total_cs, game_duration_seconds)
 
         # 4. Métricas de Rotas (Timeline aos 15') - Calculadas apenas se is_main_account == True
         laning_advantages = self._calculate_laning_advantages(
@@ -220,6 +225,7 @@ class FctMatchParticipantTransformer:
             "kda": kda,
             "damagePerMinute": dpm,
             "goldPerMinute": gpm,
+            "csPerMinute": cspm,
             "killParticipation": kp,
             "teamDamagePercentage": team_dmg_pct,
         } | laning_advantages

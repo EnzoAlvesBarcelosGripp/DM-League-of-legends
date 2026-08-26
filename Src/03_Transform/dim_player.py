@@ -35,7 +35,7 @@ def transform_dim_player(info_folder_path: str) -> pd.DataFrame:
                 json_data = json.load(f)
 
             info_data = json_data.get('info', {})
-            region = info_data.get('platformId', '')
+            # Não usada na vizualização - region = info_data.get('platformId', '')
             game_creation = info_data.get('gameCreation', 0)
 
             # loop interno para extrair as informações de cada participante
@@ -53,7 +53,7 @@ def transform_dim_player(info_folder_path: str) -> pd.DataFrame:
                     "puuid": participant.get('puuid'),
                     "game_name": g_name,
                     "tag_line": t_line,
-                    "region": region,
+                    # "region": region,
                     "profile_iconId": participant.get('profileIcon'),
                     "gameCreation": game_creation,
                     "is_main_account": is_main

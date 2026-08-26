@@ -11,40 +11,39 @@ class Dim_stylePerks_Error(Exception):
     """Classe base para erros da transformação da Dim_stylePerks."""
     pass
 
-def _get_latest_version_folder(datadragon_dir: str) -> str:
-    """Encontra a subpasta referente à versão/patch mais recente dentro do DataDragon."""
-    subdirs = [
-        d for d in os.listdir(datadragon_dir) 
-        if os.path.isdir(os.path.join(datadragon_dir, d))
-    ]
+def _get_latest_runes_file_and_version(datadragon_dir: str) -> tuple[str, str]:
+    """
+    Procura os arquivos 'runesReforged_{patch}.json.gz' no diretório e retorna
+    o caminho do arquivo mais recente junto com a string da versão.
+    """
+    files = [f for f in os.listdir(datadragon_dir) if f.startswith("runesReforged_") and f.endswith(".json.gz")]
+    
+    if not files:
+        raise FileNotFoundError(f"Nenhum arquivo runesReforged_*.json.gz encontrado em {datadragon_dir}")
 
-    if not subdirs:
-        raise FileNotFoundError(f"Nenhuma pasta de versão encontrada dentro de {datadragon_dir}")
-
-    def parse_version(version_str: str):
+    def parse_version(filename: str):
+        version_str = filename.replace("runesReforged_", "").replace(".json.gz", "")
         try:
             return tuple(map(int, version_str.split('.')))
         except ValueError:
             return (0, 0, 0)
 
-    latest_version = max(subdirs, key=parse_version)
-    return os.path.join(datadragon_dir, latest_version)
+    latest_file = max(files, key=parse_version)
+    latest_version = latest_file.replace("runesReforged_", "").replace(".json.gz", "")
+    
+    return os.path.join(datadragon_dir, latest_file), latest_version
 
 
 def transform_dim_stylePerks(datadragon_dir: str) -> pd.DataFrame:
-    """Lê o runesReforged.json da versão mais recente e gera a dim_stylePerks.csv."""
+    """Lê o runesReforged.json.gz da versão mais recente e gera a dim_stylePerks.csv."""
     json_path = None
     try:
-        latest_folder = _get_latest_version_folder(datadragon_dir)
-        json_path = os.path.join(latest_folder, "runesReforged.json")
-
-        if not os.path.exists(json_path):
-            raise FileNotFoundError(f"Arquivo de runas não encontrado em: {json_path}")
+        json_path, latest_version = _get_latest_runes_file_and_version(datadragon_dir)
 
         with gzip.open(json_path, "rt", encoding="utf-8") as f:
             json_data = json.load(f)
 
-        logging.info(f"Dim_stylePerks lendo dados da versão mais recente: {latest_folder}")
+        logging.info(f"Dim_stylePerks lendo dados da versão mais recente: {latest_version}")
 
         # Json flatten - Style -> Slots -> Runes 
         df_stylePerks = pd.json_normalize(
@@ -55,6 +54,11 @@ def transform_dim_stylePerks(datadragon_dir: str) -> pd.DataFrame:
         )
         
         df_stylePerks = df_stylePerks.rename(columns={"id": "perk_id", "icon": "perk_icon"})
+
+        # Ajusta caminhos das imagens para URL completa
+        base_url = f"https://ddragon.leagueoflegends.com/cdn/img/"
+        df_stylePerks["style_icon"] = base_url + df_stylePerks["style_icon"]
+        df_stylePerks["perk_icon"] = base_url + df_stylePerks["perk_icon"]
 
         cols_order = ["style_id", "perk_id", "style_icon", "perk_icon"]
         df_stylePerks = df_stylePerks[cols_order]

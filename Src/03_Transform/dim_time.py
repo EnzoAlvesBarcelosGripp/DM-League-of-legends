@@ -20,11 +20,8 @@ def transform_dim_time(info_folder_path: str) -> pd.DataFrame:
     """Lê os arquivos JSON de InfoMatch e gera a tabela dimensional Dim_time."""
 
     tz_env = os.getenv("TIMEZONE")
-    try:
-        if tz_env:
-            pass
-    except ZoneInfoNotFoundError as e:
-            raise dim_timeError(f"A variável de ambiente TIMEZONE não está definida no .env: {e}")
+    if not tz_env:
+        raise dim_timeError("A variável de ambiente TIMEZONE não está definida no .env.")
     try:
         target_tz = ZoneInfo(tz_env)
     except ZoneInfoNotFoundError as e:

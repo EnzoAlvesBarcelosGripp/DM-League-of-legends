@@ -2,6 +2,7 @@ import os
 import json
 import gzip
 import logging
+from datetime import datetime
 import pandas as pd
 
 SRC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -40,15 +41,6 @@ class FctPdlHistTransformer:
             logging.error(f"Erro ao carregar dim_player em {self.transform_dir}: {e}")
             raise FctPdlHistError(f"Falha ao inicializar mapa de jogadores principais: {e}")
 
-    def _get_latest_sk_time(self) -> int:
-        """Busca o sk_time mais recente presente na dim_time.csv."""
-        time_path = os.path.join(self.transform_dir, "dim_time.csv")
-        try:
-            df_time = pd.read_csv(time_path)
-            return int(df_time["sk_time"].max())
-        except Exception as e:
-            logging.error(f"Erro ao carregar dim_time em {self.transform_dir}: {e}")
-            raise FctPdlHistError(f"Não foi possível obter o sk_time da dim_time: {e}")
 
     def _to_absolute_pdl(self, tier: str, rank: str, lp: int) -> int:
         """Converte Tier, Rank e LP em uma pontuação absoluta contínua."""
@@ -85,20 +77,19 @@ class FctPdlHistTransformer:
         df_pdl["delta_pdl"] = deltas
         return df_pdl
 
-    def transform_pdl_file(self, json_data: dict | list, file_timestamp: str, puuid: str) -> list[dict]:
-        """Associa o registro ao sk_time mais recente presente na dim_time."""
+    def transform_pdl_file(self, json_data: dict | list, sk_time_file: int, puuid: str) -> list[dict]:
+        """Gera as linhas associando o snapshot ao timestamp do próprio arquivo."""
         sk_player = self.main_player_map.get(puuid)
         if not sk_player:
             return []
 
         entries = json_data if isinstance(json_data, list) else [json_data]
         records = []
-        latest_sk_time = self._get_latest_sk_time()
 
         for entry in entries:
             row = {
                 "sk_player": sk_player,
-                "sk_time": latest_sk_time,  # Chave 100% garantida na dim_time
+                "sk_time": sk_time_file,  # Usa o timestamp real de quando o dado foi puxado!
                 "tier": entry.get("tier"),
                 "rank": entry.get("rank"),
                 "leaguePoints": entry.get("leaguePoints", 0),
@@ -135,11 +126,16 @@ def transform_fct_pdl_hist(pdl_folder_path: str) -> pd.DataFrame:
 
             if len(parts) == 3:
                 puuid = parts[0]
-                timestamp = f"{parts[1]}_{parts[2]}"
+                timestamp_str = f"{parts[1]}_{parts[2]}"  # Ex: "20240813_144900"
+                
+                # Converte a string do filename para epoch em milissegundos (sk_time)
+                dt_obj = datetime.strptime(timestamp_str, "%Y%m%d_%H%M%S")
+                sk_time_file = int(dt_obj.timestamp() * 1000)
             else:
                 continue
 
-            records = transformer.transform_pdl_file(entries, timestamp, puuid)
+            # Passa o sk_time_file (inteiro) no lugar do timestamp (string)
+            records = transformer.transform_pdl_file(entries, sk_time_file, puuid)
             all_records.extend(records)
 
         except Exception as e:

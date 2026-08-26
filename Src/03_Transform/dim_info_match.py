@@ -39,8 +39,8 @@ def transform_dim_info_match(info_folder_path: str) -> pd.DataFrame:
                     "game_duration": info_data.get("gameDuration"),
                     "game_version": info_data.get("gameVersion"), 
                     "platform_id": info_data.get("platformId"),
-                    "game_ended_in_surrender": info_data.get("gameEndedInSurrender"),
-                    "game_ended_in_early_surrender": info_data.get("gameEndedInEarlySurrender")
+                    # Não usado na vizualização - "game_ended_in_surrender": info_data.get("gameEndedInSurrender"),
+                    # Não usado na vizualização - "game_ended_in_early_surrender": info_data.get("gameEndedInEarlySurrender")
                 }
 
                 info_list.append(info_dict)
