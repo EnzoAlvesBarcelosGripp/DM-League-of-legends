@@ -19,8 +19,6 @@ class DBLoader:
         self.db_user = os.getenv("DB_USER")
         self.db_password = os.getenv("DB_PASSWORD")
         self.schema = "dw_riot"
-        print("USUÁRIO LIDO:", os.getenv("DB_USER"))
-        print("PORTA LIDA:", os.getenv("DB_PORT"))
 
         # Criação da engine do SQLAlchemy
         self.db_url = f"postgresql+psycopg2://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"

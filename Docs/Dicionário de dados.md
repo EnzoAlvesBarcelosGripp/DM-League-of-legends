@@ -29,7 +29,7 @@
 * Valores booleanos se está envolvido no **Firs Blood**:
     * **Participation**
 
-* Acompanhar **ganho/perda de pdl** por jogo.w
+* Acompanhar **ganho/perda de pdl** por jogo.
 
 * Analisar os tipos de téminos de partidas:
     * ``Surrender``

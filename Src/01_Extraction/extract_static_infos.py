@@ -11,7 +11,7 @@ def save_json(data: dict | list, folder_path: str, filename: str) -> None:
     os.makedirs(folder_path, exist_ok=True)
     file_path = os.path.join(folder_path, filename)
     
-    with open(file_path, 'w', encoding='utf-8') as f:
+    with gzip.open(file_path, 'wt', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)    
 
     logging.info(f"Arquivo JSON salvo em: {file_path}")
@@ -53,63 +53,60 @@ def get_game_versions_from_matches(info_folder_path: str) -> list[str]:
 
 def download_static_data_for_versions(load_dir: str, info_folder_path: str) -> None:
     """
-    Extrai do Data Dragon apenas os dados estáticos das versões presentes nas partidas.
+    Extrai do Data Dragon apenas os dados estáticos do ÚLTIMO patch presente nas partidas.
     """
-    # pega as versões unicas para aquele conjunto de partidas
+    # Pega as versões únicas das partidas extraídas
     game_versions = get_game_versions_from_matches(info_folder_path)
 
-    # Verifca se a lista veio vazia
     if not game_versions:
-            logging.error(f'Nenhuma versão de partida encontrada para processar dados estáticos.')
-            raise DataDragonError(f'Nenhuma versão de partida encontrada para processar dados estáticos.')
+        logging.error('Nenhuma versão de partida encontrada para processar dados estáticos.')
+        raise DataDragonError('Nenhuma versão de partida encontrada para processar dados estáticos.')
 
     dragon = DataDragon()
     try:
-        # lista com todas as versões do DDragon
+        # A lista do Data Dragon já vem ordenada do patch MAIS NOVO para o MAIS ANTIGO
         dragon_versions = dragon.get_list_versions()
     except DataDragonError as e:
         logging.error(f'Falha ao obter lista de versões: {e}')
         raise DataDragonError(f'Falha ao obter lista de versões, endpoint {dragon.url}/api/versions.json')
 
+    # Extrai apenas os prefixos "XX.YY" das nossas partidas (ex: "14.16")
     unique_patches = {
         '.'.join(each_game_version.split('.')[:2])
         for each_game_version in game_versions
     }
-    for each_game_version in game_versions:
-        # Converte o formato de 'XX.XX.YYYYY.YYY' para 'XX.XX' - formato no DDragon
-        patch_match = '.'.join(each_game_version.split('.')[:2])
 
-        # Encontra o correspondente no Data Dragon
-        matching_version = None
-        for patch_ddragon in dragon_versions:
-            if patch_ddragon.startswith(patch_match):
-                matching_version = patch_ddragon
-                break
+    # Como a lista da Riot é decrescente, o primeiro match que encontrarmos será o MAIS RECENTE
+    latest_matching_version = None
+    for patch_ddragon in dragon_versions:
+        # Extrai a base do patch do Data Dragon (ex: "14.16.1" vira "14.16")
+        base_patch = '.'.join(patch_ddragon.split('.')[:2])
+        if base_patch in unique_patches:
+            latest_matching_version = patch_ddragon
+            break # Achou o mais recente? Para o loop!
 
-        if matching_version:
-            logging.info(f'Baixando dados estáticos para a versão {matching_version} (Patch {patch_match})')
-            # Seta a version correta para poder puxar os dados
-            dragon.set_version(matching_version)
+    if latest_matching_version:
+        logging.info(f'Baixando dados estáticos apenas para o patch mais recente: {latest_matching_version}')
+        
+        # Seta a versão no objeto do Data Dragon
+        dragon.set_version(latest_matching_version)
 
-            # Cria pasta organizada por versões
-            version_folder = os.path.join(load_dir,"DataDragon",matching_version)
+        # Pasta alvo agora é direto na raiz do DataDragon
+        target_folder = os.path.join(load_dir, "DataDragon")
 
-            # Extração das informações na versão correta
-            try:
-                # campeões
-                champions = dragon.get_champion_data()
-                save_json(champions, version_folder, 'champion.json.gz')
+        try:
+            # Salva os arquivos com o patch no nome
+            champions = dragon.get_champion_data()
+            save_json(champions, target_folder, f'champion_{latest_matching_version}.json.gz')
 
-                # spells
-                summoners = dragon.get_summoner_spell_data()
-                save_json(summoners,version_folder,'summoner.json.gz')
+            summoners = dragon.get_summoner_spell_data()
+            save_json(summoners, target_folder, f'summoner_{latest_matching_version}.json.gz')
 
-                # runas
-                runes = dragon.get_runes_reforged_data()
-                save_json(runes,version_folder,'runesReforged.json.gz')
+            runes = dragon.get_runes_reforged_data()
+            save_json(runes, target_folder, f'runesReforged_{latest_matching_version}.json.gz')
 
-            except DataDragonError as e:
-                logging.error(f"Erro ao baixar dados para a versão {matching_version}: {e}")
-                raise DataDragonError(f'Erro ao baixar dados para a versão {matching_version}')
-        else:
-             logging.warning(f"Nenhuma versão compatível no Data Dragon para o patch {patch_match}.")   
+        except DataDragonError as e:
+            logging.error(f"Erro ao baixar dados para a versão {latest_matching_version}: {e}")
+            raise DataDragonError(f'Erro ao baixar dados para a versão {latest_matching_version}')
+    else:
+        logging.warning("Nenhuma versão compatível encontrada no Data Dragon para as partidas atuais.")  

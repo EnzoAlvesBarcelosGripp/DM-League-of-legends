@@ -43,10 +43,7 @@ def make_logging() -> None:
     return None
 
 def main():
-    try:
-        make_logging()
-    except:
-        print(f'Erro ao criar a pasta de Logs')
+    make_logging()
 
     client = RiotAPIClient()
     

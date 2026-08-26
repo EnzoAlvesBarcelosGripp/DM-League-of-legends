@@ -114,36 +114,42 @@ class FctMatchParticipantTransformer:
 
         return stats_15m
 
-    def _calculate_laning_advantages(self, participant_id: int, is_main_account: bool,participants_info: list, stats_15m: dict) -> dict:
+    def _get_opponent_by_index(self, participants_info: list, participant_id: int) -> dict | None:
+        """
+        Localiza o adversário direto de rota com base na ordem da lista de participantes.
+        A Riot ordena o JSON no padrão: 0-4 (Time 1: Top, Jg, Mid, Adc, Sup) e 5-9 (Time 2: mesma ordem).
+        """
+        # Localiza o índice do jogador atual na lista
+        main_index = next((i for i, p in enumerate(participants_info) if p.get("participantId") == participant_id), None)
+        
+        if main_index is None:
+            return None
+
+        # Calcula o índice do adversário cruzando os times (+5 ou -5)
+        opponent_index = main_index + 5 if main_index < 5 else main_index - 5
+
+        # Trava de segurança: garante que o índice do adversário existe na lista (evita quebra em jogos atípicos como 3v3 ou afins)
+        if 0 <= opponent_index < len(participants_info):
+            return participants_info[opponent_index]
+            
+        return None
+
+    def _calculate_laning_advantages(self, participant_id: int, is_main_account: bool, participants_info: list, stats_15m: dict) -> dict:
         """Calcula as vantagens de fase de rotas apenas se for a conta principal (is_main_account == True)."""
         default_advantages = {
-            "laningPhaseGoldAdvantage": None, # valor nulo
+            "laningPhaseGoldAdvantage": None,
             "laningPhaseExpAdvantage": None,
             "laningPhaseCsAdvantage": None
         }
 
-        # Trava: Executa os cálculos avançados apenas para a sua conta principal
+        # Trava: Executa os cálculos avançados apenas para a sua conta principal e se tiver dados aos 15 min
         if not is_main_account or not stats_15m or participant_id not in stats_15m:
             return default_advantages
 
-        # Localiza as informações do jogador principal
-        current_p = next((p for p in participants_info if p.get("participantId") == participant_id), None)
-        if not current_p:
-            return default_advantages
+        # Usa a nova função auxiliar para resgatar oponente exato pelo índice (ex: participants[0] vs participants[5])
+        opponent = self._get_opponent_by_index(participants_info, participant_id)
 
-        team_id = current_p.get("teamId")
-        position = current_p.get("individualPosition")
-
-        # Se a posição for inválida ou vazia (ex: remakes ou jogos atípicos), não há confronto de rota
-        if not position or position in ["Invalid", ""]:
-            return default_advantages
-
-        # Procura o rival de rota (Time oposto + Mesma posição)
-        opponent = next((
-            p for p in participants_info 
-            if p.get("teamId") != team_id and p.get("individualPosition") == position
-        ), None)
-
+        # Se não achar o oponente ou ele não tiver dados aos 15 minutos, retorna nulo
         if not opponent or opponent.get("participantId") not in stats_15m:
             return default_advantages
 

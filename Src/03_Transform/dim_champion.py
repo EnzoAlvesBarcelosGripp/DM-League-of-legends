@@ -1,4 +1,5 @@
 import os
+import gzip
 import json
 import logging
 import pandas as pd
@@ -42,7 +43,7 @@ def transform_dim_champion(datadragon_dir: str) -> pd.DataFrame:
         if not os.path.exists(json_path):
             raise FileNotFoundError(f"Arquivo de campeões não encontrado em: {json_path}")
 
-        with open(json_path, "r", encoding="utf-8") as f:
+        with gzip.open(json_path, "rt", encoding="utf-8") as f:
             data_json = json.load(f)
 
         logging.info(f"Dim_champion lendo dados da versão mais recente: {latest_folder}")
@@ -58,7 +59,7 @@ def transform_dim_champion(datadragon_dir: str) -> pd.DataFrame:
                 "image_full": detail.get("image", {}).get("full", ""),  
                 "champion_tags": ", ".join(detail.get("tags", [])),  
             }
-
+            campeao_dict['image_full'] = campeao_dict
             champion_list.append(campeao_dict)
             i += 1
 

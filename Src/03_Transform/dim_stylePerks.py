@@ -1,4 +1,5 @@
 import os 
+import gzip
 import json
 import logging
 import pandas as pd
@@ -40,7 +41,7 @@ def transform_dim_stylePerks(datadragon_dir: str) -> pd.DataFrame:
         if not os.path.exists(json_path):
             raise FileNotFoundError(f"Arquivo de runas não encontrado em: {json_path}")
 
-        with open(json_path, "r", encoding="utf-8") as f:
+        with gzip.open(json_path, "rt", encoding="utf-8") as f:
             json_data = json.load(f)
 
         logging.info(f"Dim_stylePerks lendo dados da versão mais recente: {latest_folder}")
