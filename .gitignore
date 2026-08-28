@@ -4,21 +4,25 @@
 *.log
 *.csv
 
-
 # Amostras DataDragon
-!Src\02_Load\DataDragon\champion_16.16.1.json.gz
-!Src\02_Load\DataDragon\runesReforged_16.16.1.json.gz
-!Src\02_Load\DataDragon\summoner_16.17.1.json.gz # Ao rodar pela segunda vez havia partidas neste patch
+!Src/02_Load/DataDragon/champion_16.16.1.json.gz
+!Src/02_Load/DataDragon/runesReforged_16.16.1.json.gz
+# Ao rodar pela segunda vez havia partidas neste patch
+!Src/02_Load/DataDragon/summoner_16.17.1.json.gz
+
 # Amostras League-V4
-!Src\02_Load\League-V4\5j4CF6Df8Sw-cKl76IzWaCOqAKH5a3w-MdI_8wCT_MyM9A9m3n8NAS47g5b39ANYOrR-mNwmyNm1SA_20260826_174323.json.gz
-!Src\02_Load\League-V4\5j4CF6Df8Sw-cKl76IzWaCOqAKH5a3w-MdI_8wCT_MyM9A9m3n8NAS47g5b39ANYOrR-mNwmyNm1SA_20260827_230904.json.gz
+!Src/02_Load/League-V4/5j4CF6Df8Sw-cKl76IzWaCOqAKH5a3w-MdI_8wCT_MyM9A9m3n8NAS47g5b39ANYOrR-mNwmyNm1SA_20260826_174323.json.gz
+!Src/02_Load/League-V4/5j4CF6Df8Sw-cKl76IzWaCOqAKH5a3w-MdI_8wCT_MyM9A9m3n8NAS47g5b39ANYOrR-mNwmyNm1SA_20260827_230904.json.gz
+
 # Amostras Match-V5/InfoMatch
-!Src\02_Load\Match-V5\InfoMatch\BR1_3238579455_info.json.gz
-!Src\02_Load\Match-V5\InfoMatch\BR1_3238911743_info.json.gz
-!Src\02_Load\Match-V5\InfoMatch\BR1_3238926987_info.json.gz
+!Src/02_Load/Match-V5/InfoMatch/BR1_3238579455_info.json.gz
+!Src/02_Load/Match-V5/InfoMatch/BR1_3238911743_info.json.gz
+!Src/02_Load/Match-V5/InfoMatch/BR1_3238926987_info.json.gz
+
 # Amostras Match-V5/ListMatchId
-!Src\02_Load\Match-V5\listMatchId\5j4CF6Df8Sw-cKl76IzWaCOqAKH5a3w-MdI_8wCT_MyM9A9m3n8NAS47g5b39ANYOrR-mNwmyNm1SA_matches.json.gz
+!Src/02_Load/Match-V5/listMatchId/5j4CF6Df8Sw-cKl76IzWaCOqAKH5a3w-MdI_8wCT_MyM9A9m3n8NAS47g5b39ANYOrR-mNwmyNm1SA_matches.json.gz
+
 # Amostras Match-V5/TimelineMatch
-!Src\02_Load\Match-V5\TimelineMatch\BR1_3238579455_timeline.json.gz
-!Src\02_Load\Match-V5\TimelineMatch\BR1_3238911743_timeline.json.gz
-!Src\02_Load\Match-V5\InfoMatch\BR1_3238926987_timeline.json.gz
+!Src/02_Load/Match-V5/TimelineMatch/BR1_3238579455_timeline.json.gz
+!Src/02_Load/Match-V5/TimelineMatch/BR1_3238911743_timeline.json.gz
+!Src/02_Load/Match-V5/InfoMatch/BR1_3238926987_timeline.json.gz
