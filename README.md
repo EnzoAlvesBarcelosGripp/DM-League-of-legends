@@ -8,6 +8,7 @@ A pipeline utiliza duas fontes de dados:
 - **Data Dragon** — fonte de dados estáticos e versionados do jogo, utilizada para complementar as informações obtidas durante a extração.
 
 O projeto também utiliza **Docker Compose** para provisionar e executar o banco de dados PostgreSQL e o pipeline ETL em containers.
+
 ---
 
 # Como executar
